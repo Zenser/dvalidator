@@ -1,0 +1,34 @@
+{
+  "name": "vulidate",
+  "version": "0.1.0",
+  "description": "A form validator base vue",
+  "main": "dist/vulidate.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "node build/build.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Zenser/vulidate.git"
+  },
+  "keywords": [
+    "validator",
+    "vue"
+  ],
+  "author": "张帅",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/Zenser/vulidate/issues"
+  },
+  "homepage": "https://github.com/Zenser/vulidate#readme",
+  "devDependencies": {
+    "babel-core": "^6.26.3",
+    "babel-preset-env": "^1.7.0",
+    "minify": "^3.0.5",
+    "rollup": "^0.61.1",
+    "rollup-plugin-babel": "^3.0.4"
+  },
+  "peerDependencies": {
+    "vue": "^2.2.0"
+  }
+}
