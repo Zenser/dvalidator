@@ -60,18 +60,29 @@ export default {
         }, [
             label ? h('label', {staticClass: 'vul-form-item-label'}, label) : null,
             this.$slots.default,
-            h('span', {staticClass: 'vul-form-item-message'}, this.validMessage)
+            h('span', {
+                staticClass: 'vul-form-item-message', 
+                directives: [{
+                    name: 'show',
+                    value: !this.valid,
+                    expression: '!valid'
+                }]
+            }, this.validMessage)
         ])
     },
     methods: {
         validate(trigger) {
-            this.valid = this.inputs.every(input => {
-                let valid = this.validateItem(trigger, input)
-                if (!valid) {
-                    this.invalidInput = input
-                }
-                return valid
-            })
+            if (this.isMultipart) {
+                this.valid = this.inputs.every(input => {
+                    let valid = this.validateItem(trigger, input)
+                    if (!valid) {
+                        this.invalidInput = input
+                    }
+                    return valid
+                })
+            } else {
+                this.valid = this.validateItem(trigger)
+            }
             return this.valid
         },
         validateItem(trigger, input = {}) {

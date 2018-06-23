@@ -17,18 +17,13 @@
         },
         provide: function provide() {
             return {
-                form: {
-                    rules: this.rules,
-                    value: this.value,
-                    register: this.register,
-                    unregister: this.unregister
-                }
+                form: this
             };
         },
         created: function created() {
             this.formItems = [];
         },
-        render: function render(h, context) {
+        render: function render(h) {
             return h('form', {
                 attrs: {
                     novalidate: true
@@ -38,23 +33,25 @@
                         return e.preventDefault();
                     }
                 }
-            }, context.children);
+            }, this.$slots.default);
         },
 
         methods: {
             validate: function validate() {
                 var options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {
+                    trigger: null,
                     firstField: false
                 };
+                var trigger = options.trigger;
 
                 if (options.firstField) {
                     return Promise.resolve(this.formItems.every(function (i) {
-                        return i.validate();
+                        return i.validate(trigger);
                     }));
                 } else {
                     var result = true;
                     this.formItems.forEach(function (i) {
-                        var valid = i.validate();
+                        var valid = i.validate(trigger);
                         if (result) {
                             result = valid;
                         }
@@ -223,20 +220,31 @@
             return h('div', {
                 staticClass: 'vul-form-item',
                 'class': { error: !this.valid }
-            }, [label ? h('label', { staticClass: 'vul-form-item-label' }, label) : null, this.$slots.default, h('span', { staticClass: 'vul-form-item-message' }, this.validMessage)]);
+            }, [label ? h('label', { staticClass: 'vul-form-item-label' }, label) : null, this.$slots.default, h('span', {
+                staticClass: 'vul-form-item-message',
+                directives: [{
+                    name: 'show',
+                    value: !this.valid,
+                    expression: '!valid'
+                }]
+            }, this.validMessage)]);
         },
 
         methods: {
             validate: function validate(trigger) {
                 var _this = this;
 
-                this.valid = this.inputs.every(function (input) {
-                    var valid = _this.validateItem(trigger, input);
-                    if (!valid) {
-                        _this.invalidInput = input;
-                    }
-                    return valid;
-                });
+                if (this.isMultipart) {
+                    this.valid = this.inputs.every(function (input) {
+                        var valid = _this.validateItem(trigger, input);
+                        if (!valid) {
+                            _this.invalidInput = input;
+                        }
+                        return valid;
+                    });
+                } else {
+                    this.valid = this.validateItem(trigger);
+                }
                 return this.valid;
             },
             validateItem: function validateItem(trigger) {

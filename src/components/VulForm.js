@@ -6,18 +6,13 @@ export default {
     },
     provide() {
         return {
-            form: {
-                rules: this.rules,
-                value: this.value,
-                register: this.register,
-                unregister: this.unregister
-            }
+            form: this
         }
     },
     created() {
         this.formItems = []
     },
-    render(h, context) {
+    render(h) {
         return h('form', {
             attrs: {
                 novalidate: true
@@ -25,18 +20,20 @@ export default {
             nativeOn: {
                 submit: e => e.preventDefault()
             }
-        }, context.children)
+        }, this.$slots.default)
     },
     methods: {
         validate(options = {
+            trigger: null,
             firstField: false
         }) {
+            const {trigger} = options
             if (options.firstField) {
-                return Promise.resolve(this.formItems.every(i => i.validate()))
+                return Promise.resolve(this.formItems.every(i => i.validate(trigger)))
             } else {
                 let result = true
                 this.formItems.forEach(i => {
-                    let valid = i.validate()
+                    let valid = i.validate(trigger)
                     if (result) {
                         result = valid
                     }

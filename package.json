@@ -5,7 +5,8 @@
   "main": "dist/vulidate.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "node build/build.js"
+    "build": "node build/build.js",
+    "dev": "browser-sync start --ss './' -f 'example/**'"
   },
   "repository": {
     "type": "git",
@@ -24,11 +25,13 @@
   "devDependencies": {
     "babel-core": "^6.26.3",
     "babel-preset-env": "^1.7.0",
+    "browser-sync": "^2.24.4",
     "minify": "^3.0.5",
     "rollup": "^0.61.1",
-    "rollup-plugin-babel": "^3.0.4"
+    "rollup-plugin-babel": "^3.0.4",
+    "vue": "^2.5.0"
   },
   "peerDependencies": {
-    "vue": "^2.2.0"
+    "vue": "^2.5.0"
   }
 }
