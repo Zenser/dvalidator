@@ -1,5 +1,6 @@
-import * as validator from '../validator'
+import validator from '../validator'
 import ACTIONS from '../actions'
+import {validate} from '../helpers'
 export default {
     name: 'vul-form-item',
     provide() {
@@ -39,17 +40,20 @@ export default {
     },
     computed: {
         allRules() {
+            const model = this.form && this.form.value
             return (
                 this.rules ||
                 (this.form && this.form.rules && this.form.rules[this.prop]) ||
+                // single validate
+                (model && model.__rules && model.__rules[this.prop]) ||
+                // multipart validate
+                (model && model[this.prop] && model[this.prop].__rules) ||
                 []
             )
         },
-        isMultipart() {
-            return this.inputs.length > 1
-        },
         fixedValue() {
-            return this.form && this.form.value && this.form.value[this.prop]
+            const value = this.form && this.form.value || {}
+            return this.prop ? value[this.prop] : value
         }
     },
     render(h) {
@@ -71,69 +75,26 @@ export default {
         ])
     },
     methods: {
-        validate(trigger) {
-            if (this.isMultipart) {
-                this.valid = this.inputs.every(input => {
-                    let valid = this.validateItem(trigger, input)
-                    if (!valid) {
-                        this.invalidInput = input
-                    }
-                    return valid
-                })
-            } else {
-                this.valid = this.validateItem(trigger)
-            }
-            return this.valid
-        },
-        validateItem(trigger, input = {}) {
+        validate(trigger, input = {}) {
             const rules = this.getFilterRules(trigger, input.prop)
-            let valid = true
-            if (!rules || !rules.length) {
-                return true
-            }
-            let value = this.fixedValue
-            if (this.isMultipart) {
-                if (!value) {
-                    throw new Error(`formItem multipart value is not a object`)
-                }
-                value = value[input.prop]
+            if (!rules) {
+                return Promise.resolve()
             }
 
-            // 对单条规则进行校验
-            const validItemRule = (itemRule = {}) => {
-                if (
-                    itemRule.required &&
-                    (value == null ||
-                        value === '' ||
-                        (Array.isArray(value) && !value.length))
-                ) {
-                    valid = false
-                } else if (!itemRule.fn) {
-                    valid = true
-                } else if (typeof itemRule.fn === 'string') {
-                    // 已定义公共规则校验
-                    const validateKey = `${itemRule.fn}Check`
-                    if (validateKey in validator) {
-                        valid = validator[validateKey](value)
-                    } else {
-                        throw new Error(`${validateKey}无此校验函数`)
-                    }
-                } else {
-                    // funciton校验
-                    valid = itemRule.fn(value)
-                }
-                this.validMessage = itemRule && itemRule.message
-                // console.log(`validItem`, itemRule, 'valid', valid)
-                return valid
-            }
-            return rules.every(validItemRule)
+            return validate(rules, this.fixedValue).then(() => {
+                this.valid = true
+            }).catch(error => {
+                this.valid = false
+                this.validMessage = error.message
+                return Promise.reject(error)
+            })
         },
         validateOptionHandler(input) {
             // 解绑
             input.unBindTriggerWatchers && input.unBindTriggerWatchers()
             const cb = (trigger) => {
                 this.valid = this.inputs.slice(0, this.inputs.indexOf(input) + 1).every(vm => {
-                    return this.validateItem(trigger, vm)
+                    return this.validate(trigger, vm)
                 })
             }
             const onBlurCb = () => {
@@ -164,7 +125,7 @@ export default {
             const noopArr = []
             let rules = this.allRules
 
-            if (this.isMultipart) {
+            if (name) {
                 rules = rules[name] || noopArr
             }
 

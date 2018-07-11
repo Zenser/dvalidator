@@ -22,6 +22,12 @@ export default {
             }
         }, this.$slots.default)
     },
+    computed: {
+        resolvedRules() {
+            // __rules from decorator
+            return this.rules || this.value && this.value.__rules
+        }
+    },
     methods: {
         validate(options = {
             trigger: null,
@@ -29,16 +35,27 @@ export default {
         }) {
             const {trigger} = options
             if (options.firstField) {
-                return Promise.resolve(this.formItems.every(i => i.validate(trigger)))
+                return Promise.all(this.formItems.map(i => i.validate(trigger)))
             } else {
-                let result = true
-                this.formItems.forEach(i => {
-                    let valid = i.validate(trigger)
-                    if (result) {
-                        result = valid
+                return new Promise((resolve, reject) => {
+                    let errors = [], finalLen = 0, length = this.formItems.length
+                    this.formItems.forEach(i => {
+                        i.validate(trigger).then(judge).catch(error => {
+                            errors.push(error)
+                            judge()
+                        })
+                    })
+                    function judge() {
+                        if (++finalLen === length) {
+                            // finally
+                            if (errors.length) {
+                                reject(errors)
+                            } else {
+                                resolve()
+                            }
+                        }
                     }
                 })
-                return Promise.resolve(result)
             }
         },
         validateAndScroll(...args) {

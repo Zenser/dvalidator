@@ -36,8 +36,16 @@
             }, this.$slots.default);
         },
 
+        computed: {
+            resolvedRules: function resolvedRules() {
+                // __rules from decorator
+                return this.rules || this.value && this.value.__rules;
+            }
+        },
         methods: {
             validate: function validate() {
+                var _this = this;
+
                 var options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {
                     trigger: null,
                     firstField: false
@@ -45,26 +53,39 @@
                 var trigger = options.trigger;
 
                 if (options.firstField) {
-                    return Promise.resolve(this.formItems.every(function (i) {
+                    return Promise.all(this.formItems.map(function (i) {
                         return i.validate(trigger);
                     }));
                 } else {
-                    var result = true;
-                    this.formItems.forEach(function (i) {
-                        var valid = i.validate(trigger);
-                        if (result) {
-                            result = valid;
+                    return new Promise(function (resolve, reject) {
+                        var errors = [],
+                            finalLen = 0,
+                            length = _this.formItems.length;
+                        _this.formItems.forEach(function (i) {
+                            i.validate(trigger).then(judge).catch(function (error) {
+                                errors.push(error);
+                                judge();
+                            });
+                        });
+                        function judge() {
+                            if (++finalLen === length) {
+                                // finally
+                                if (errors.length) {
+                                    reject(errors);
+                                } else {
+                                    resolve();
+                                }
+                            }
                         }
                     });
-                    return Promise.resolve(result);
                 }
             },
             validateAndScroll: function validateAndScroll() {
-                var _this = this;
+                var _this2 = this;
 
                 return this.validate.apply(this, arguments).then(function (valid) {
                     if (!valid) {
-                        _this.formItems.every(function (item) {
+                        _this2.formItems.every(function (item) {
                             if (!item.valid) {
                                 item.$el.scrollIntoViewIfNeeded();
                                 typeof item.invalidInput.focus === 'function' && item.invalidInput.focus();
@@ -87,20 +108,20 @@
     var CN_MOBIIE_REGEXP = /^(\+?0?86-?)?1[3456789]\d{9}$/;
     var FIXED_TEL_REGEXP = /^(0[0-9]{2,3}-)?([1-9][0-9]{6,7})+(-[0-9]{1,4})?$/;
 
-    function cnmobileCheck(value) {
+    function cnmobile(value) {
         return CN_MOBIIE_REGEXP.test(value);
     }
 
-    function cnnameCheck(value) {
+    function cnname(value) {
         return (/^[*\u4E00-\u9FA5]{1,8}(?:[·•]{1}[\u4E00-\u9FA5]{2,10})*$/.test(value)
         );
     }
 
-    function fixedtelCheck(value) {
+    function fixedtel(value) {
         return FIXED_TEL_REGEXP.test(value);
     }
     // added verfication of bankcard http://blog.csdn.net/mytianhe/article/details/18256925
-    function bankcardCheck(cardNo) {
+    function bankcard(cardNo) {
         cardNo = ('' + cardNo).replace(/\s/gi, '');
         var len = cardNo.length;
         if (!/\d+/.test(cardNo) || len < 9) {
@@ -125,7 +146,7 @@
         }
     }
 
-    function idCardCheck(val) {
+    function idCard(val) {
         if (/^\d{17}[0-9xX]$/.test(val)) {
             var vs = '1,0,x,9,8,7,6,5,4,3,2'.split(',');
             var ps = '7,9,10,5,8,4,2,1,6,3,7,9,10,5,8,4,2'.split(',');
@@ -138,31 +159,125 @@
         }
     }
 
-    function passwordCheck(password) {
-        password = password + '';
-        return password.length > 6 && /\d+/.test(password) && /[a-z]+/.test(password);
-    }
+    var validator = {
+        cnmobile: cnmobile,
+        cnname: cnname,
+        fixedtel: fixedtel,
+        bankcard: bankcard,
+        idCard: idCard
+    };
 
-    function smsCodeCheck(value) {
-        return (/[0-9]{4,6}/.test(value)
-        );
+    function registValidator(fn) {
+        validator[fn.name] = fn;
     }
-
-    var validator = /*#__PURE__*/Object.freeze({
-        cnmobileCheck: cnmobileCheck,
-        cnnameCheck: cnnameCheck,
-        fixedtelCheck: fixedtelCheck,
-        bankcardCheck: bankcardCheck,
-        idCardCheck: idCardCheck,
-        passwordCheck: passwordCheck,
-        smsCodeCheck: smsCodeCheck
-    });
 
     var ACTIONS = {
         BLUR: "vul.blur",
         FOCUS: "vul.focus",
         CHANGE: "vul.change"
     };
+
+    function noopFn() {}
+    /**
+     * adaptor:
+     * 各组件适配器，控制何时触发actions['change', 'blur']
+     * 组件created钩子触发时调用
+     */
+    function createValidatable() {
+        var adaptor = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : noopFn;
+
+        return {
+            name: 'vul-validatable',
+            inject: {
+                formItem: {
+                    default: null
+                }
+            },
+            props: {
+                prop: String
+            },
+            mounted: function mounted() {
+                adaptor.call(this, ACTIONS);
+                if (this.formItem) {
+                    this.formItem.register(this);
+                }
+            },
+            destroyed: function destroyed() {
+                this.formItem && this.formItem.unregister(this);
+            }
+        };
+    }
+
+    var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
+    function mixinValidatable(component, option) {
+        component.mixins = component.mixins || [];
+        component.mixins.push(createValidatable(option));
+        return component;
+    }
+
+    function validate(rules, values) {
+        var _this = this;
+
+        if ((typeof rules === 'undefined' ? 'undefined' : _typeof(rules)) === 'object' && rules !== null) {
+            return new Promise(function (resolve, reject) {
+                var keys = Object.keys(rules),
+                    errors = [],
+                    finalLen = 0,
+                    length = _this.formItems.length;
+                keys.forEach(function (key) {
+                    validate(rules[key], values[key]).then(judge).catch(function (error) {
+                        errors.push(error);
+                        judge();
+                        return Promise.reject(error);
+                    });
+                });
+
+                function judge() {
+                    if (++finalLen === length) {
+                        // finally
+                        if (errors.length) {
+                            reject(errors);
+                        } else {
+                            resolve();
+                        }
+                    }
+                }
+            });
+        } else if (Array.isArray(rules) && rules.length) {
+            // exec in sequence
+            return rules.slice(1).reduce(function (lastPromise, curentRule) {
+                return lastPromise.then(function () {
+                    validItem(curentRule, values);
+                });
+            }, validItem(rules[0], values));
+        } else {
+            return Promise.reject(new Error('rules type should be object or array'));
+        }
+    }
+
+    function validItem(rule, value) {
+        var result = void 0;
+        if (rule.required && (value == null || value === '' || Array.isArray(value) && !value.length)) {
+            result = false;
+        } else if (!rule.fn) {
+            result = true;
+        } else if (typeof rule.fn === 'string') {
+            // 已定义公共规则校验
+            var validateKey = rule.fn;
+            if (validateKey in validator) {
+                result = validator[validateKey](value);
+            } else {
+                throw new Error('not define ' + validateKey + ' in validator');
+            }
+        } else {
+            // funciton校验
+            result = rule.fn(value);
+        }
+        if (result.then) {
+            return result;
+        }
+        return result ? Promise.resolve() : Promise.reject(Object.assign({}, rule));
+    }
 
     var VulFormItem = {
         name: 'vul-form-item',
@@ -205,13 +320,16 @@
 
         computed: {
             allRules: function allRules() {
-                return this.rules || this.form && this.form.rules && this.form.rules[this.prop] || [];
-            },
-            isMultipart: function isMultipart() {
-                return this.inputs.length > 1;
+                var model = this.form && this.form.value;
+                return this.rules || this.form && this.form.rules && this.form.rules[this.prop] ||
+                // single validate
+                model && model.__rules && model.__rules[this.prop] ||
+                // multipart validate
+                model && model[this.prop] && model[this.prop].__rules || [];
             },
             fixedValue: function fixedValue() {
-                return this.form && this.form.value && this.form.value[this.prop];
+                var value = this.form && this.form.value || {};
+                return this.prop ? value[this.prop] : value;
             }
         },
         render: function render(h) {
@@ -231,90 +349,48 @@
         },
 
         methods: {
-            validate: function validate(trigger) {
+            validate: function validate$$1(trigger) {
                 var _this = this;
-
-                if (this.isMultipart) {
-                    this.valid = this.inputs.every(function (input) {
-                        var valid = _this.validateItem(trigger, input);
-                        if (!valid) {
-                            _this.invalidInput = input;
-                        }
-                        return valid;
-                    });
-                } else {
-                    this.valid = this.validateItem(trigger);
-                }
-                return this.valid;
-            },
-            validateItem: function validateItem(trigger) {
-                var _this2 = this;
 
                 var input = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
 
                 var rules = this.getFilterRules(trigger, input.prop);
-                var valid = true;
-                if (!rules || !rules.length) {
-                    return true;
-                }
-                var value = this.fixedValue;
-                if (this.isMultipart) {
-                    if (!value) {
-                        throw new Error('formItem multipart value is not a object');
-                    }
-                    value = value[input.prop];
+                if (!rules) {
+                    return Promise.resolve();
                 }
 
-                // 对单条规则进行校验
-                var validItemRule = function validItemRule() {
-                    var itemRule = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
-
-                    if (itemRule.required && (value == null || value === '' || Array.isArray(value) && !value.length)) {
-                        valid = false;
-                    } else if (!itemRule.fn) {
-                        valid = true;
-                    } else if (typeof itemRule.fn === 'string') {
-                        // 已定义公共规则校验
-                        var validateKey = itemRule.fn + 'Check';
-                        if (validateKey in validator) {
-                            valid = validator[validateKey](value);
-                        } else {
-                            throw new Error(validateKey + '\u65E0\u6B64\u6821\u9A8C\u51FD\u6570');
-                        }
-                    } else {
-                        // funciton校验
-                        valid = itemRule.fn(value);
-                    }
-                    _this2.validMessage = itemRule && itemRule.message;
-                    // console.log(`validItem`, itemRule, 'valid', valid)
-                    return valid;
-                };
-                return rules.every(validItemRule);
+                return validate(rules, this.fixedValue).then(function () {
+                    _this.valid = true;
+                }).catch(function (error) {
+                    _this.valid = false;
+                    _this.validMessage = error.message;
+                    return Promise.reject(error);
+                });
             },
             validateOptionHandler: function validateOptionHandler(input) {
-                var _this3 = this;
+                var _this2 = this;
 
                 // 解绑
                 input.unBindTriggerWatchers && input.unBindTriggerWatchers();
                 var cb = function cb(trigger) {
-                    _this3.valid = _this3.inputs.slice(0, _this3.inputs.indexOf(input) + 1).every(function (vm) {
-                        return _this3.validateItem(trigger, vm);
+                    _this2.valid = _this2.inputs.slice(0, _this2.inputs.indexOf(input) + 1).every(function (vm) {
+                        return _this2.validate(trigger, vm);
                     });
                 };
                 var onBlurCb = function onBlurCb() {
-                    _this3.focusd = false;
-                    cb.call(_this3, 'blur');
+                    _this2.focusd = false;
+                    cb.call(_this2, 'blur');
                 };
                 var onChangeCb = function onChangeCb() {
                     // 处理事件之外更新情况
-                    if (!_this3.focusd) {
-                        cb.call(_this3, 'blur');
+                    if (!_this2.focusd) {
+                        cb.call(_this2, 'blur');
                         return;
                     }
-                    cb.call(_this3, 'change');
+                    cb.call(_this2, 'change');
                 };
                 var onFocusCb = function onFocusCb() {
-                    _this3.focusd = true;
+                    _this2.focusd = true;
                 };
                 input.$on(ACTIONS.BLUR, onBlurCb);
                 input.$on(ACTIONS.FOCUS, onFocusCb);
@@ -329,7 +405,7 @@
                 var noopArr = [];
                 var rules = this.allRules;
 
-                if (this.isMultipart) {
+                if (name) {
                     rules = rules[name] || noopArr;
                 }
 
@@ -352,41 +428,71 @@
         }
     };
 
-    function noopFn() {}
-    /**
-     * adaptor:
-     * 各组件适配器，控制何时触发actions['change', 'blur']
-     * 组件created钩子触发时调用
-     */
-    function createValidatable() {
-        var adaptor = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : noopFn;
+    var decorators = {};['required'].concat(Object.keys(validator)).forEach(function (key) {
+        decorators[key] = decoratorFactory(key);
+    });
 
-        return {
-            name: 'vul-validatable',
-            inject: {
-                formItem: {
-                    default: null
+    function decoratorFactory(key) {
+        return function () {
+            var message = arguments[0] || 'valid fail';
+            var trigger = arguments[1];
+            return function (target, property, descriptor) {
+                if (!target.__rules) {
+                    Object.defineProperty(target, '__rules', {
+                        enumerable: false,
+                        configurable: false,
+                        writable: true,
+                        value: Object.create(null)
+                    });
+                    Object.defineProperty(target, '$validate', {
+                        enumerable: false,
+                        configurable: false,
+                        writable: false,
+                        value: function value() {
+                            return new Promise(function (resolve, reject) {
+                                var keys = Object.keys(target),
+                                    length = keys.filter(function (key) {
+                                    var $validate = target[key].$validate;
+                                    if ($validate) {
+                                        $validate().then(judge).catch(function (error) {
+                                            errors.push(error);
+                                            judge();
+                                        });
+                                    }
+                                    return !!$validate;
+                                }).length + 1,
+                                    finalLen = 0,
+                                    errors = [];
+                                validate(target, target.__rules).then(judge).catch(function (error) {
+                                    errors.push(error);
+                                    judge();
+                                });
+                                function judge() {
+                                    if (++finalLen === length) {
+                                        // finally
+                                        if (errors.length) {
+                                            reject(errors);
+                                        } else {
+                                            resolve();
+                                        }
+                                    }
+                                }
+                            });
+                        }
+                    });
                 }
-            },
-            props: {
-                prop: String
-            },
-            mounted: function mounted() {
-                adaptor.call(this, ACTIONS);
-                if (this.formItem) {
-                    this.formItem.register(this);
+                var rule = {
+                    message: message
+                };
+                key === 'required' ? rule.required = true : rule.fn = validator[key];
+                trigger && (rule.trigger = trigger);
+                if (target.__rules[property]) {
+                    target.__rules[property].push(rule);
+                } else {
+                    target.__rules[property] = [rule];
                 }
-            },
-            destroyed: function destroyed() {
-                this.formItem && this.formItem.unregister(this);
-            }
+            };
         };
-    }
-
-    function mixinValidatable(component, option) {
-        component.mixins = component.mixins || [];
-        component.mixins.push(createValidatable(option));
-        return component;
     }
 
     function install(Vue) {
@@ -399,7 +505,10 @@
     exports.install = install;
     exports.createValidatable = createValidatable;
     exports.ACTIONS = ACTIONS;
+    exports.registValidator = registValidator;
+    exports.decorators = decorators;
     exports.mixinValidatable = mixinValidatable;
+    exports.validate = validate;
 
     Object.defineProperty(exports, '__esModule', { value: true });
 
