@@ -2,9 +2,9 @@
 
 > A pure, extendable, very useful validator base Promise and Decorator
 
-- Validate object literals
-- Asynchronous
-- Ordered
+- <b>Object literals</b> : Base es7 Decorator, we can add a decorator on a object literals. Vulidate will add some unenumerable keys to store rules.
+- <b>Asynchronous</b> : Vulidate support async validator function
+- <b>Ordered</b> : When you call `$validate` function, Vulidate will exec validator function in ordered.
 
 ## Install
 
@@ -30,8 +30,8 @@ plugins: [
   ]
 ]
 ```
-
-For example, we validate a user object.
+<hr>
+For example, we validate a user object. <br>
 nickname and phone is required, also phone is validate from remote server.
 
 ```js
@@ -42,17 +42,18 @@ const requiredRule = {
   message: 'required'
 }
 const required = vulidate(requiredRule)
-const checkPhone = vulidate((value) => fetch(`xxx/${value}`))
+const checkPhone = vulidate(value => fetch(`xxx/${value}`))
 
 const user = {
-  @required('nickname is required)
+  @required('nickname is required')
   nickname: '',
   @checkPhone('phone valid fail')
   @required('phone is required')
   phone: ''
 }
 
-user.$validate()
+user
+  .$validate()
   .then(/* success */)
   .catch(reason => {
     /* fail */

@@ -1,15 +1,17 @@
 {
   "name": "vulidate",
-  "version": "0.2.0",
+  "version": "0.2.2",
   "description": "A pure, extendable, very useful validator base Promise and Decorator",
-  "main": "vulidate.js",
+  "main": "lib/vulidate.js",
+  "module": "index.js",
   "scripts": {
     "build": "node build.js",
     "test": "cross-env NODE_ENV=test jest",
     "lint": "eslint *.js"
   },
   "files": [
-    "lib"
+    "lib",
+    "index.js"
   ],
   "repository": {
     "type": "git",
