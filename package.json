@@ -1,16 +1,15 @@
 {
   "name": "vulidate",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "A pure, extendable, very useful validator base Promise and Decorator",
   "main": "vulidate.js",
   "scripts": {
-    "build": "node build/build.js",
-    "test": "jest",
-    "lint": "eslint ./index.js ./index.test.js ./build.js"
+    "build": "node build.js",
+    "test": "cross-env NODE_ENV=test jest",
+    "lint": "eslint *.js"
   },
   "files": [
-    "src",
-    "dist"
+    "lib"
   ],
   "repository": {
     "type": "git",
@@ -34,6 +33,7 @@
     "@babel/preset-env": "^7.4.5",
     "babel-eslint": "^10.0.1",
     "babel-jest": "^24.8.0",
+    "cross-env": "^5.2.0",
     "eslint": "^5.16.0",
     "eslint-config-standard": "^12.0.0",
     "eslint-plugin-import": "^2.17.3",
@@ -50,7 +50,8 @@
   },
   "husky": {
     "hooks": {
-      "pre-commit": "lint-staged"
+      "pre-commit": "lint-staged",
+      "pre-push": "npm test"
     }
   },
   "lint-staged": {

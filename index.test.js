@@ -1,4 +1,4 @@
-import { createDecorator } from '.'
+import createDecorator from '.'
 
 const requiredRule = {
   validator: val => val != null && val !== '',

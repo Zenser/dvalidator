@@ -1,4 +1,4 @@
-export function validate (rules, values) {
+function validate (rules, values) {
   if (Array.isArray(rules) && rules.length) {
     // exec in sequence
     return rules.slice(1).reduce((lastPromise, curentRule) => {
@@ -60,7 +60,7 @@ function validItem (rule, value) {
   return result ? Promise.resolve() : Promise.reject(source)
 }
 
-export function createDecorator (rule) {
+export default function createDecorator (rule) {
   if (!rule) {
     throw new Error('no rule provided')
   }
@@ -68,7 +68,7 @@ export function createDecorator (rule) {
     rule = { validator: rule }
   }
 
-  return function decorator (args) {
+  return function appendDecorator (args) {
     let newRule
     if (typeof args === 'string') {
       newRule = Object.assign({}, rule, { message: args || 'valid fail' })
@@ -76,7 +76,7 @@ export function createDecorator (rule) {
       newRule = Object.assign({}, rule, args)
     }
 
-    return function decoratorResolve (target, property) {
+    return function decorator (target, property) {
       if (!target.__rules) {
         Object.defineProperty(target, '__rules', {
           enumerable: false,

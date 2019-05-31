@@ -6,7 +6,7 @@ const config = JSON.parse(fs.readFileSync('./package.json'))
 module.exports = {
   input: 'index.js',
   output: {
-    file: 'vulidate.js',
+    file: 'lib/vulidate.js',
     name: 'vulidate',
     format: 'umd',
     banner: `/*!
