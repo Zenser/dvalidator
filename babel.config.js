@@ -3,7 +3,7 @@ module.exports = {
     [
       '@babel/env',
       {
-        modules: process.env.NODE_ENV === 'test' ? 'ump' : false
+        modules: process.env.NODE_ENV === 'test' ? 'umd' : false
       }
     ]
   ],
