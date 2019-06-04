@@ -1,17 +1,17 @@
-import createDecorator from '.'
+import vulidate from './index'
 
 const requiredRule = {
   validator: val => val != null && val !== '',
   message: 'required'
 }
-const required = createDecorator(requiredRule)
+const required = vulidate(requiredRule)
 
 test('base test', () => {
   /* simple one rules */
   const sku = {
     num: 2
   }
-  required()(sku, 'num')
+  required(sku, 'num')
 
   expect(sku.__rules.num).toEqual([requiredRule])
   expect(sku.$validate()).resolves.toBe()
@@ -27,7 +27,7 @@ test('base test', () => {
   }
   const limitRule = limit({ min: 1, max: 10 })
   const limitMessage = 'num problem'
-  createDecorator(limitRule)(limitMessage)(sku, 'num')
+  vulidate(limitRule)(limitMessage)(sku, 'num')
   sku.num = 2
   expect(sku.$validate()).resolves.toBe()
 
@@ -52,12 +52,12 @@ test('async test', done => {
   const person = {
     name: 'bar'
   }
-  createDecorator(asyncRule)()(person, 'name')
+  vulidate(asyncRule)(person, 'name')
   expect(person.$validate()).resolves.toBe()
 
   /* multi rules: async & sync */
   const strValidator = val => /^\w+$/i.test(val)
-  createDecorator(strValidator)()(person, 'name')
+  vulidate(strValidator)()(person, 'name')
   person.name = '校验'
 
   expect(person.$validate()).rejects.toEqual([
@@ -82,7 +82,7 @@ test('decorator test', done => {
   const user = {
     @required(nicknameRequiredMessage)
     nickname: '',
-    @(createDecorator(asyncRule)())
+    @vulidate(asyncRule)
     @required(phoneRequiredMessage)
     phone: ''
   }

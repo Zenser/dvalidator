@@ -48,7 +48,7 @@ const user = {
   @required('nickname is required')
   nickname: '',
   @checkPhone('phone valid fail')
-  @required('phone is required')
+  @required
   phone: ''
 }
 

@@ -60,46 +60,51 @@ function validItem (rule, value) {
   return result ? Promise.resolve() : Promise.reject(source)
 }
 
-export default function createDecorator (rule) {
-  if (!rule) {
-    throw new Error('no rule provided')
+function proxyRules (rule, target, property) {
+  if (!target.__rules) {
+    Object.defineProperty(target, '__rules', {
+      enumerable: false,
+      configurable: false,
+      writable: false,
+      value: Object.create(null)
+    })
+    Object.defineProperty(target, '$validate', {
+      enumerable: false,
+      configurable: false,
+      writable: false,
+      value: function $validate () {
+        return validate(getRules(target), target)
+      }
+    })
   }
-  if (typeof rule === 'function') {
-    rule = { validator: rule }
+  if (target.__rules[property]) {
+    target.__rules[property].push(rule)
+  } else {
+    target.__rules[property] = [rule]
+  }
+}
+
+function deserialize (options) {
+  if (typeof options === 'function') {
+    return { validator: options }
+  } else if (typeof options === 'string') {
+    return { message: options || 'valid fail' }
+  }
+  return options
+}
+
+export default function vulidate (...args) {
+  if (args.length <= 2) {
+    const rule = Object.assign({}, deserialize(args[0]), deserialize(args[1]))
+    return vulidate.bind(null, rule)
   }
 
-  return function appendDecorator (args) {
-    let newRule
-    if (typeof args === 'string') {
-      newRule = Object.assign({}, rule, { message: args || 'valid fail' })
-    } else {
-      newRule = Object.assign({}, rule, args)
-    }
-
-    return function decorator (target, property) {
-      if (!target.__rules) {
-        Object.defineProperty(target, '__rules', {
-          enumerable: false,
-          configurable: false,
-          writable: false,
-          value: Object.create(null)
-        })
-        Object.defineProperty(target, '$validate', {
-          enumerable: false,
-          configurable: false,
-          writable: false,
-          value: function $validate () {
-            return validate(getRules(target), target)
-          }
-        })
-      }
-      if (target.__rules[property]) {
-        target.__rules[property].push(newRule)
-      } else {
-        target.__rules[property] = [newRule]
-      }
-    }
+  const [rule, target, property] = args
+  if (!rule || typeof rule.validator !== 'function') {
+    throw new Error('no rule validator provided')
   }
+
+  return proxyRules(rule, target, property)
 }
 
 function getRules (val) {
