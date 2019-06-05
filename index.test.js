@@ -1,10 +1,10 @@
-import vulidate from './index'
+import dvalidator from './index'
 
 const requiredRule = {
   validator: val => val != null && val !== '',
   message: 'required'
 }
-const required = vulidate(requiredRule)
+const required = dvalidator(requiredRule)
 
 test('base test', () => {
   /* simple one rules */
@@ -27,7 +27,7 @@ test('base test', () => {
   }
   const limitRule = limit({ min: 1, max: 10 })
   const limitMessage = 'num problem'
-  vulidate(limitRule)(limitMessage)(sku, 'num')
+  dvalidator(limitRule)(limitMessage)(sku, 'num')
   sku.num = 2
   expect(sku.$validate()).resolves.toBe()
 
@@ -52,12 +52,12 @@ test('async test', done => {
   const person = {
     name: 'bar'
   }
-  vulidate(asyncRule)(person, 'name')
+  dvalidator(asyncRule)(person, 'name')
   expect(person.$validate()).resolves.toBe()
 
   /* multi rules: async & sync */
   const strValidator = val => /^\w+$/i.test(val)
-  vulidate(strValidator)()(person, 'name')
+  dvalidator(strValidator)()(person, 'name')
   person.name = '校验'
 
   expect(person.$validate()).rejects.toEqual([
@@ -82,7 +82,7 @@ test('decorator test', done => {
   const user = {
     @required(nicknameRequiredMessage)
     nickname: '',
-    @vulidate(asyncRule)
+    @dvalidator(asyncRule)
     @required(phoneRequiredMessage)
     phone: ''
   }

@@ -93,10 +93,10 @@ function deserialize (options) {
   return options
 }
 
-export default function vulidate (...args) {
+export default function dvalidator (...args) {
   if (args.length <= 2) {
     const rule = Object.assign({}, deserialize(args[0]), deserialize(args[1]))
-    return vulidate.bind(null, rule)
+    return dvalidator.bind(null, rule)
   }
 
   const [rule, target, property] = args

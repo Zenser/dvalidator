@@ -1,4 +1,4 @@
-interface vulidate {
+interface dvalidator {
   (rule: Validator | Rule): AppendDecorator
 }
 

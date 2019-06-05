@@ -1,8 +1,8 @@
 {
-  "name": "vulidate",
-  "version": "0.2.3",
+  "name": "dvalidator",
+  "version": "0.0.1",
   "description": "A pure, extendable, very useful validator base Promise and Decorator",
-  "main": "lib/vulidate.js",
+  "main": "lib/dvalidator.js",
   "module": "index.js",
   "scripts": {
     "build": "node build.js",
@@ -15,7 +15,7 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Zenser/vulidate.git"
+    "url": "git+https://github.com/Zenser/dvalidator.git"
   },
   "keywords": [
     "validator",
@@ -27,9 +27,9 @@
   "author": "张帅",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/Zenser/vulidate/issues"
+    "url": "https://github.com/Zenser/dvalidator/issues"
   },
-  "homepage": "https://github.com/Zenser/vulidate#readme",
+  "homepage": "https://github.com/Zenser/dvalidator#readme",
   "dependencies": {},
   "devDependencies": {
     "@babel/core": "^7.4.5",

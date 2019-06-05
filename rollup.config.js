@@ -6,11 +6,11 @@ const config = JSON.parse(fs.readFileSync('./package.json'))
 module.exports = {
   input: 'index.js',
   output: {
-    file: 'lib/vulidate.js',
-    name: 'vulidate',
+    file: 'lib/dvalidator.js',
+    name: 'dvalidator',
     format: 'umd',
     banner: `/*!
-* Vulidate.js v${config.version}
+* dvalidator.js v${config.version}
 * (c) 2019 张帅
 * Released under the MIT License.
 */`
