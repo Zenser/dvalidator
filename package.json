@@ -1,6 +1,6 @@
 {
   "name": "dvalidator",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "A pure, extendable, very useful validator base Promise and Decorator",
   "main": "lib/dvalidator.js",
   "module": "index.js",
