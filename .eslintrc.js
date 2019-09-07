@@ -5,5 +5,8 @@ module.exports = {
       legacyDecorators: true
     }
   },
-  extends: ['standard', 'plugin:jest/recommended']
+  extends: ['standard', 'plugin:jest/recommended'],
+  rules: {
+    'prefer-promise-reject-errors': 0
+  }
 }

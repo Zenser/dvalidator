@@ -1,11 +1,29 @@
-function validate (rules, values) {
+export default function dvalidator (...args) {
+  if (args.length <= 2) {
+    const rule = Object.assign({}, deserialize(args[0]), deserialize(args[1]))
+    return dvalidator.bind(null, rule)
+  }
+
+  const [rule, target, property] = args
+  if (!rule || typeof rule.validator !== 'function') {
+    throw new Error('no rule validator provided')
+  }
+
+  return proxyRules(rule, target, property)
+}
+
+function validate (target) {
+  return _validate(target, getRules(target))
+}
+
+function _validate (target, rules, attachedKey = '') {
   if (Array.isArray(rules) && rules.length) {
     // exec in sequence
     return rules.slice(1).reduce((lastPromise, curentRule) => {
       return lastPromise.then(() => {
-        return validItem(curentRule, values)
+        return validItem(target, curentRule, attachedKey)
       })
-    }, validItem(rules[0], values))
+    }, validItem(target, rules[0], attachedKey))
   } else if (typeof rules === 'object' && rules !== null) {
     return new Promise((resolve, reject) => {
       let keys = Object.keys(rules)
@@ -13,7 +31,11 @@ function validate (rules, values) {
       let finalLen = 0
       let length = keys.length
       keys.forEach(key => {
-        validate(rules[key], values[key])
+        _validate(
+          target[key],
+          rules[key],
+          attachedKey ? attachedKey + '.' + key : key
+        )
           .then(judge)
           .catch(error => {
             errors.push(error)
@@ -37,32 +59,29 @@ function validate (rules, values) {
   }
 }
 
-function validItem (rule, value) {
-  let result
-  let source = Object.assign({ value }, rule)
-  if (!rule.validator) {
-    result = true
-  } else {
-    // funciton validate
-    result = rule.validator(value, source)
+function validItem (value, rule, key) {
+  let result = rule.validator(value)
+  const { message } = rule
+
+  if (typeof result === 'boolean') {
+    return result
+      ? Promise.resolve()
+      : Promise.reject({ key, value, message, rule })
   }
 
-  // thenable
-  if (typeof result.then === 'function') {
-    return result.catch(reason => {
-      const res = { ...source, reason }
-      if (typeof reason === 'string') {
-        res.message = reason
-      }
-      throw res
-    })
-  }
-  return result ? Promise.resolve() : Promise.reject(source)
+  return Promise.resolve(result).catch(res => {
+    // format errorMessage
+    const error = { key, value, message, rule, extra: res }
+    if (typeof res === 'string') {
+      error.message = res
+    }
+    throw error
+  })
 }
 
 function proxyRules (rule, target, property) {
-  if (!target.__rules) {
-    Object.defineProperty(target, '__rules', {
+  if (!target.$rules) {
+    Object.defineProperty(target, '$rules', {
       enumerable: false,
       configurable: false,
       writable: false,
@@ -72,15 +91,13 @@ function proxyRules (rule, target, property) {
       enumerable: false,
       configurable: false,
       writable: false,
-      value: function $validate () {
-        return validate(getRules(target), target)
-      }
+      value: validate.bind(null, target)
     })
   }
-  if (target.__rules[property]) {
-    target.__rules[property].push(rule)
+  if (target.$rules[property]) {
+    target.$rules[property].push(rule)
   } else {
-    target.__rules[property] = [rule]
+    target.$rules[property] = [rule]
   }
 }
 
@@ -93,23 +110,9 @@ function deserialize (options) {
   return options
 }
 
-export default function dvalidator (...args) {
-  if (args.length <= 2) {
-    const rule = Object.assign({}, deserialize(args[0]), deserialize(args[1]))
-    return dvalidator.bind(null, rule)
-  }
-
-  const [rule, target, property] = args
-  if (!rule || typeof rule.validator !== 'function') {
-    throw new Error('no rule validator provided')
-  }
-
-  return proxyRules(rule, target, property)
-}
-
 function getRules (val) {
-  if (val && val.__rules) {
-    let rules = Object.assign({}, val.__rules)
+  if (val && val.$rules) {
+    let rules = Object.assign({}, val.$rules)
     Object.keys(val).forEach(k => {
       rules[k] = getRules(val[k]) || rules[k]
     })

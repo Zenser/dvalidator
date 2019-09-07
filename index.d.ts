@@ -1,33 +1,36 @@
-interface dvalidator {
+export interface dvalidator {
   (rule: Validator | Rule): AppendDecorator
 }
 
-interface ProxyObject {
-  readonly __rules: Map<string, Rule[]>,
-  readonly $validate(): Promise<ResolvedSource[]>
-}
-
-interface Decorator {
-  (target: ProxyObject, property: string): void
-}
-
-interface AppendDecorator {
-  (args: string | Rule | any): Decorator
-}
-
-interface Validator {
-  (value: any, source: Source): boolean | Promise<any>
+export interface validate {
+  (target: ProxyObject): Promise<ValidateError[] | void>
 }
 
 interface Rule {
-  validator: Validator;
-  message?: string;
+  validator: Validator
+  message?: string
 }
 
-interface Source extends Rule {
-  value: any
+interface AppendDecorator {
+  (rule: string | Rule | void): AppendDecorator
+  (target: object, key: string): void
 }
 
-interface ResolvedSource extends Source {
-  reason?: any
+interface ProxyObject {
+  readonly $rules: RuleMap
+  $validate(): Promise<ValidateError[] | void>
+}
+
+type RuleMap = Map<string, Rule[]>
+
+interface Validator {
+  (value: any): boolean | Promise<any> | void
+}
+
+interface ValidateError {
+  key: string
+  value: string
+  message: string
+  rule: Rule
+  extra?: any
 }

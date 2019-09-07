@@ -13,11 +13,18 @@ test('base test', () => {
   }
   required(sku, 'num')
 
-  expect(sku.__rules.num).toEqual([requiredRule])
+  expect(sku.$rules.num).toEqual([requiredRule])
   expect(sku.$validate()).resolves.toBe()
 
   sku.num = null
-  expect(sku.$validate()).rejects.toEqual([{ ...requiredRule, value: sku.num }])
+  expect(sku.$validate()).rejects.toEqual([
+    {
+      key: 'num',
+      value: sku.num,
+      rule: requiredRule,
+      message: requiredRule.message
+    }
+  ])
 
   /* multi rules */
   function limit ({ min = -Infinity, max = Infinity }) {
@@ -33,7 +40,12 @@ test('base test', () => {
 
   sku.num = -1
   expect(sku.$validate()).rejects.toEqual([
-    { message: limitMessage, validator: limitRule, value: sku.num }
+    {
+      key: 'num',
+      value: sku.num,
+      rule: { validator: limitRule, message: limitMessage },
+      message: limitMessage
+    }
   ])
 })
 
@@ -61,7 +73,12 @@ test('async test', done => {
   person.name = '校验'
 
   expect(person.$validate()).rejects.toEqual([
-    { validator: strValidator, value: person.name }
+    {
+      key: 'name',
+      value: person.name,
+      rule: { validator: strValidator },
+      message: undefined
+    }
   ])
 })
 
@@ -88,13 +105,34 @@ test('decorator test', done => {
   }
 
   expect(user.$validate()).rejects.toEqual([
-    { ...requiredRule, message: nicknameRequiredMessage, value: user.nickname },
-    { ...requiredRule, message: phoneRequiredMessage, value: user.phone }
+    {
+      key: 'nickname',
+      rule: Object.assign({}, requiredRule, { message: nicknameRequiredMessage }),
+      message: nicknameRequiredMessage,
+      value: user.nickname
+    },
+    {
+      key: 'phone',
+      rule: Object.assign({}, requiredRule, { message: phoneRequiredMessage }),
+      message: phoneRequiredMessage,
+      value: user.phone
+    }
   ])
 
   user.phone = '1333333'
   expect(user.$validate()).rejects.toEqual([
-    { ...requiredRule, message: nicknameRequiredMessage, value: user.nickname },
-    { ...asyncRule, message: phoneAsyncMessage, reason: phoneAsyncMessage, value: user.phone }
+    {
+      key: 'nickname',
+      rule: Object.assign({}, requiredRule, { message: nicknameRequiredMessage }),
+      message: nicknameRequiredMessage,
+      value: user.nickname
+    },
+    {
+      key: 'phone',
+      rule: asyncRule,
+      message: phoneAsyncMessage,
+      extra: phoneAsyncMessage,
+      value: user.phone
+    }
   ])
 })
