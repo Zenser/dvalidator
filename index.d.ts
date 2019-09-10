@@ -3,7 +3,7 @@ export interface dvalidator {
 }
 
 export interface validate {
-  (target: ProxyObject): Promise<ValidateError[] | void>
+  (target: ProxyObject, filter:? Function): Promise<ValidateError[] | void>
 }
 
 interface Rule {

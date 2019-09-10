@@ -96,18 +96,23 @@ test('decorator test', done => {
       })
     }
   }
-  const user = {
+
+  class User {
     @required(nicknameRequiredMessage)
-    nickname: '',
+    nickname = ''
     @dvalidator(asyncRule)
     @required(phoneRequiredMessage)
-    phone: ''
+    phone = ''
   }
+
+  const user = new User()
 
   expect(user.$validate()).rejects.toEqual([
     {
       key: 'nickname',
-      rule: Object.assign({}, requiredRule, { message: nicknameRequiredMessage }),
+      rule: Object.assign({}, requiredRule, {
+        message: nicknameRequiredMessage
+      }),
       message: nicknameRequiredMessage,
       value: user.nickname
     },
@@ -123,7 +128,9 @@ test('decorator test', done => {
   expect(user.$validate()).rejects.toEqual([
     {
       key: 'nickname',
-      rule: Object.assign({}, requiredRule, { message: nicknameRequiredMessage }),
+      rule: Object.assign({}, requiredRule, {
+        message: nicknameRequiredMessage
+      }),
       message: nicknameRequiredMessage,
       value: user.nickname
     },

@@ -1,19 +1,44 @@
-export default function dvalidator (...args) {
-  if (args.length <= 2) {
-    const rule = Object.assign({}, deserialize(args[0]), deserialize(args[1]))
+const dvalidator = legacyAdaptor((args0, args1) => {
+  if (!args1 || args1[Symbol.toStringTag] !== 'Descriptor') {
+    const rule = Object.assign({}, deserialize(args0), deserialize(args1))
     return dvalidator.bind(null, rule)
   }
 
-  const [rule, target, property] = args
+  const rule = args0
+  const { kind, key, initializer } = args1
+  if (kind !== 'field') {
+    throw new Error('dvalidator must apply on Class Field')
+  }
+  assertRule(rule)
+  args1.initializer = function () {
+    initializer.call(this)
+    proxyRules(rule, this, key)
+  }
+  return args1
+})
+
+export default dvalidator
+
+function legacyAdaptor (next) {
+  return (...args) => {
+    if (args.length >= 3) {
+      const [rule, target, property] = args
+      assertRule(rule)
+      proxyRules(rule, target, property)
+    } else {
+      return next(...args)
+    }
+  }
+}
+
+function assertRule (rule) {
   if (!rule || typeof rule.validator !== 'function') {
     throw new Error('no rule validator provided')
   }
-
-  return proxyRules(rule, target, property)
 }
 
-function validate (target) {
-  return _validate(target, getRules(target))
+function validate (target, filter) {
+  return _validate(target, resolveRules(target, '', filter))
 }
 
 function _validate (target, rules, attachedKey = '') {
@@ -110,12 +135,19 @@ function deserialize (options) {
   return options
 }
 
-function getRules (val) {
-  if (val && val.$rules) {
-    let rules = Object.assign({}, val.$rules)
-    Object.keys(val).forEach(k => {
-      rules[k] = getRules(val[k]) || rules[k]
-    })
-    return rules
+function resolveRules (val, key = '', filter = () => true) {
+  if (!val || !val.$rules) {
+    return
   }
+
+  let rules = {}
+  Object.keys(val).forEach(k => {
+    const finalKey = key ? k : key + '.' + k
+
+    // filter for dynamic select need validate data
+    if (filter(finalKey)) {
+      rules[k] = resolveRules(val[k], finalKey, filter) || val.$rules[k]
+    }
+  })
+  return rules
 }
