@@ -38,10 +38,12 @@ function assertRule (rule) {
 }
 
 function validate (target, filter) {
-  return _validate(target, resolveRules(target, '', filter))
+  const rules = resolveRules(target, '', filter)
+  return _validate(target, rules)
 }
 
 function _validate (target, rules, attachedKey = '') {
+  const isRoot = attachedKey === ''
   if (Array.isArray(rules) && rules.length) {
     // exec in sequence
     return rules.slice(1).reduce((lastPromise, curentRule) => {
@@ -59,11 +61,12 @@ function _validate (target, rules, attachedKey = '') {
         _validate(
           target[key],
           rules[key],
-          attachedKey ? attachedKey + '.' + key : key
+          isRoot ? key : attachedKey + '.' + key
         )
           .then(judge)
-          .catch(error => {
-            errors.push(error)
+          .catch(err => {
+            // flat nest obj
+            errors = errors.concat(err)
             judge()
           })
       })
@@ -142,11 +145,16 @@ function resolveRules (val, key = '', filter = () => true) {
 
   let rules = {}
   Object.keys(val).forEach(k => {
-    const finalKey = key ? k : key + '.' + k
+    const finalKey = key ? key + '.' + k : k
+    const resolvedRules = resolveRules(val[k], finalKey, filter)
 
     // filter for dynamic select need validate data
-    if (filter(finalKey)) {
-      rules[k] = resolveRules(val[k], finalKey, filter) || val.$rules[k]
+    if (resolvedRules) {
+      // nest rule
+      rules[k] = resolvedRules
+    } else if (filter(finalKey)) {
+      // plain rule
+      rules[k] = val.$rules[k]
     }
   })
   return rules

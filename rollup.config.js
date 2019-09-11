@@ -1,7 +1,6 @@
 // rollup.config.js
 const babel = require('rollup-plugin-babel')
-const fs = require('fs')
-const config = JSON.parse(fs.readFileSync('./package.json'))
+const config = require('./package.json')
 
 module.exports = {
   input: 'index.js',

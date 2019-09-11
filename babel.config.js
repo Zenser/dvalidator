@@ -3,6 +3,9 @@ module.exports = {
     [
       '@babel/env',
       {
+        targets: {
+          node: 'current'
+        },
         modules: process.env.NODE_ENV === 'test' ? 'umd' : false
       }
     ]
