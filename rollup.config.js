@@ -6,7 +6,7 @@ module.exports = {
   input: 'index.ts',
   output: {
     file: 'lib/index.js',
-    name: 'index',
+    name: 'dvalidator',
     format: 'umd',
     banner: `/*!
 * dvalidator.js v${config.version}
