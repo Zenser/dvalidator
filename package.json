@@ -2,16 +2,14 @@
   "name": "dvalidator",
   "version": "0.0.3",
   "description": "A pure, extendable, very useful validator base Promise and Decorator",
-  "main": "lib/dvalidator.js",
-  "module": "index.js",
+  "main": "lib/index.js",
   "scripts": {
     "build": "node build.js",
     "test": "cross-env NODE_ENV=test jest",
     "lint": "eslint *.js"
   },
   "files": [
-    "lib",
-    "index.js"
+    "lib"
   ],
   "repository": {
     "type": "git",
@@ -36,6 +34,7 @@
     "@babel/plugin-proposal-class-properties": "^7.5.5",
     "@babel/plugin-proposal-decorators": "^7.4.4",
     "@babel/preset-env": "^7.4.5",
+    "@babel/preset-typescript": "^7.6.0",
     "babel-eslint": "^10.0.1",
     "babel-jest": "^24.8.0",
     "cross-env": "^5.2.0",
@@ -51,7 +50,8 @@
     "lint-staged": "^8.1.7",
     "minify": "^3.0.5",
     "rollup": "^1.12.4",
-    "rollup-plugin-babel": "^4.3.2"
+    "rollup-plugin-typescript2": "^0.24.1",
+    "typescript": "^3.6.3"
   },
   "husky": {
     "hooks": {

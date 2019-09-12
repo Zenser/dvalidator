@@ -118,4 +118,4 @@ user.$validate().catch(error => {
 ## 接口声明文件
 
 从这里可以看到更详细的结构信息！
-[index.d.ts](index.d.ts)
+[index.d.ts](lib/index.d.ts)

@@ -63,4 +63,4 @@ user
 
 ## Interface
 
-arguments structure, describe with [typescript interface](index.d.ts).
+arguments structure, describe with [typescript interface](lib/index.d.ts).

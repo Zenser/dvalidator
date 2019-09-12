@@ -1,3 +1,4 @@
+// for run-script test
 module.exports = {
   presets: [
     [
@@ -5,10 +6,10 @@ module.exports = {
       {
         targets: {
           node: 'current'
-        },
-        modules: process.env.NODE_ENV === 'test' ? 'umd' : false
+        }
       }
-    ]
+    ],
+    '@babel/preset-typescript'
   ],
   plugins: [
     ['@babel/plugin-proposal-decorators', { decoratorsBeforeExport: false }],

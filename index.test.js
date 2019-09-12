@@ -1,4 +1,4 @@
-import dvalidator from './index'
+import dvalidator from './index.ts'
 
 const requiredRule = {
   validator: val => val != null && val !== '',

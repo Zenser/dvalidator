@@ -1,12 +1,12 @@
 // rollup.config.js
-const babel = require('rollup-plugin-babel')
 const config = require('./package.json')
+const rollupTypescript = require('rollup-plugin-typescript2')
 
 module.exports = {
-  input: 'index.js',
+  input: 'index.ts',
   output: {
-    file: 'lib/dvalidator.js',
-    name: 'dvalidator',
+    file: 'lib/index.js',
+    name: 'index',
     format: 'umd',
     banner: `/*!
 * dvalidator.js v${config.version}
@@ -16,8 +16,6 @@ module.exports = {
   },
   context: __dirname,
   plugins: [
-    babel({
-      exclude: 'node_modules/**'
-    })
+    rollupTypescript()
   ]
 }
