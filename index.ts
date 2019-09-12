@@ -6,7 +6,7 @@ interface Filter {
   (key: string): Boolean | void;
 }
 
-interface validate {
+interface Validate {
   (target: ProxyObject, filter?: Filter): Promise<ValidateError | void>;
 }
 
@@ -54,6 +54,10 @@ interface RuleMap {
 const dvalidator: Dvalidator = legacyAdaptor(latestAdaptor);
 
 export default dvalidator;
+
+export interface $validate {
+  (filter?: Filter): Promise<ValidateError | void>;
+}
 
 function legacyAdaptor(next: Function): Dvalidator {
   function appendDecorator(rule1: InputRule, rule2?: InputRule): Dvalidator;
@@ -115,13 +119,11 @@ function assertRule(rule: InputRule) {
   }
 }
 
-function validate(
-  target: ProxyObject,
-  filter: Filter
-): Promise<ValidateError | void> {
+let validate: Validate;
+validate = function(target: ProxyObject, filter: Filter) {
   const rules = resolveRules(target, '', filter);
   return _validate(target, rules);
-}
+};
 
 function _validate(
   target: ProxyObject,

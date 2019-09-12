@@ -10,7 +10,7 @@ module.exports = {
     format: 'umd',
     banner: `/*!
 * dvalidator.js v${config.version}
-* (c) 2019 张帅
+* (c) 2019 zeus
 * Released under the MIT License.
 */`
   },
