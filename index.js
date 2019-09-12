@@ -55,6 +55,7 @@ function _validate (target, rules, attachedKey = '') {
     return new Promise((resolve, reject) => {
       let keys = Object.keys(rules)
       let errors = []
+      const fields = {}
       let finalLen = 0
       let length = keys.length
       keys.forEach(key => {
@@ -64,9 +65,15 @@ function _validate (target, rules, attachedKey = '') {
           isRoot ? key : attachedKey + '.' + key
         )
           .then(judge)
-          .catch(err => {
-            // flat nest obj
-            errors = errors.concat(err)
+          .catch(res => {
+            if (res.fields) {
+              // flat nest obj
+              fields[key] = res.fields
+              errors = errors.concat(res.errors)
+            } else {
+              fields[key] = res
+              errors.push(res)
+            }
             judge()
           })
       })
@@ -75,7 +82,7 @@ function _validate (target, rules, attachedKey = '') {
         if (++finalLen === length) {
           // finally
           if (errors.length) {
-            reject(errors)
+            reject({ errors, fields })
           } else {
             resolve()
           }

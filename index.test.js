@@ -6,7 +6,7 @@ const requiredRule = {
 }
 const required = dvalidator(requiredRule)
 
-test('base test', () => {
+test('base test', async () => {
   /* simple one rules */
   const sku = {
     num: 2
@@ -14,17 +14,19 @@ test('base test', () => {
   required(sku, 'num')
 
   expect(sku.$rules.num).toEqual([requiredRule])
-  expect(sku.$validate()).resolves.toBe()
+  await expect(sku.$validate()).resolves.toBe()
 
   sku.num = null
-  expect(sku.$validate()).rejects.toEqual([
-    {
-      key: 'num',
-      value: sku.num,
-      rule: requiredRule,
-      message: requiredRule.message
-    }
-  ])
+  let numError = {
+    key: 'num',
+    value: sku.num,
+    rule: requiredRule,
+    message: requiredRule.message
+  }
+  await expect(sku.$validate()).rejects.toEqual({
+    errors: [numError],
+    fields: { num: numError }
+  })
 
   /* multi rules */
   function limit ({ min = -Infinity, max = Infinity }) {
@@ -36,17 +38,19 @@ test('base test', () => {
   const limitMessage = 'num problem'
   dvalidator(limitRule)(limitMessage)(sku, 'num')
   sku.num = 2
-  expect(sku.$validate()).resolves.toBe()
+  await expect(sku.$validate()).resolves.toBe()
 
   sku.num = -1
-  expect(sku.$validate()).rejects.toEqual([
-    {
-      key: 'num',
-      value: sku.num,
-      rule: { validator: limitRule, message: limitMessage },
-      message: limitMessage
-    }
-  ])
+  numError = {
+    key: 'num',
+    value: sku.num,
+    rule: { validator: limitRule, message: limitMessage },
+    message: limitMessage
+  }
+  await expect(sku.$validate()).rejects.toEqual({
+    errors: [numError],
+    fields: { num: numError }
+  })
 })
 
 test('async test', async () => {
@@ -54,9 +58,7 @@ test('async test', async () => {
   const asyncRule = {
     validator () {
       return new Promise(resolve => {
-        setTimeout(() => {
-          resolve()
-        }, 0)
+        resolve()
       })
     }
   }
@@ -68,17 +70,19 @@ test('async test', async () => {
 
   /* multi rules: async & sync */
   const strValidator = val => /^\w+$/i.test(val)
-  dvalidator(strValidator)()(person, 'name')
+  dvalidator(strValidator)(person, 'name')
   person.name = '校验'
 
-  await expect(person.$validate()).rejects.toEqual([
-    {
-      key: 'name',
-      value: person.name,
-      rule: { validator: strValidator },
-      message: undefined
-    }
-  ])
+  let nameError = {
+    key: 'name',
+    value: person.name,
+    rule: { validator: strValidator },
+    message: undefined
+  }
+  await expect(person.$validate()).rejects.toEqual({
+    errors: [nameError],
+    fields: { name: nameError }
+  })
 })
 
 test('decorator test', async () => {
@@ -88,9 +92,7 @@ test('decorator test', async () => {
   const asyncRule = {
     validator () {
       return new Promise((resolve, reject) => {
-        setTimeout(() => {
-          reject(phoneAsyncMessage)
-        }, 0)
+        reject(phoneAsyncMessage)
       })
     }
   }
@@ -105,53 +107,44 @@ test('decorator test', async () => {
 
   const user = new User()
 
-  await expect(user.$validate()).rejects.toEqual([
-    {
-      key: 'nickname',
-      rule: Object.assign({}, requiredRule, {
-        message: nicknameRequiredMessage
-      }),
-      message: nicknameRequiredMessage,
-      value: user.nickname
-    },
-    {
-      key: 'phone',
-      rule: Object.assign({}, requiredRule, { message: phoneRequiredMessage }),
-      message: phoneRequiredMessage,
-      value: user.phone
-    }
-  ])
+  let nickNameError = {
+    key: 'nickname',
+    rule: Object.assign({}, requiredRule, {
+      message: nicknameRequiredMessage
+    }),
+    message: nicknameRequiredMessage,
+    value: user.nickname
+  }
+  let phoneError = {
+    key: 'phone',
+    rule: Object.assign({}, requiredRule, { message: phoneRequiredMessage }),
+    message: phoneRequiredMessage,
+    value: user.phone
+  }
+  await expect(user.$validate()).rejects.toEqual({
+    errors: [nickNameError, phoneError],
+    fields: { nickname: nickNameError, phone: phoneError }
+  })
 
   user.phone = '1333333'
-  await expect(user.$validate()).rejects.toEqual([
-    {
-      key: 'nickname',
-      rule: Object.assign({}, requiredRule, {
-        message: nicknameRequiredMessage
-      }),
-      message: nicknameRequiredMessage,
-      value: user.nickname
-    },
-    {
-      key: 'phone',
-      rule: asyncRule,
-      message: phoneAsyncMessage,
-      extra: phoneAsyncMessage,
-      value: user.phone
-    }
-  ])
+
+  phoneError = {
+    key: 'phone',
+    rule: asyncRule,
+    message: phoneAsyncMessage,
+    extra: phoneAsyncMessage,
+    value: user.phone
+  }
+  await expect(user.$validate()).rejects.toEqual({
+    errors: [nickNameError, phoneError],
+    fields: { nickname: nickNameError, phone: phoneError }
+  })
 
   // test filter
-  await expect(user.$validate(key => key === 'nickname')).rejects.toEqual([
-    {
-      key: 'nickname',
-      rule: Object.assign({}, requiredRule, {
-        message: nicknameRequiredMessage
-      }),
-      message: nicknameRequiredMessage,
-      value: user.nickname
-    }
-  ])
+  await expect(user.$validate(key => key === 'nickname')).rejects.toEqual({
+    errors: [nickNameError],
+    fields: { nickname: nickNameError }
+  })
 
   class Group {
     @required("group name can't be empty")
@@ -163,16 +156,18 @@ test('decorator test', async () => {
   someGroup.bestUser = user
 
   // test nest filter
+  let bestUserNickError = {
+    key: 'bestUser.nickname',
+    rule: Object.assign({}, requiredRule, {
+      message: nicknameRequiredMessage
+    }),
+    message: nicknameRequiredMessage,
+    value: user.nickname
+  }
   await expect(
     someGroup.$validate(key => /^bestUser\.nick/.test(key))
-  ).rejects.toEqual([
-    {
-      key: 'bestUser.nickname',
-      rule: Object.assign({}, requiredRule, {
-        message: nicknameRequiredMessage
-      }),
-      message: nicknameRequiredMessage,
-      value: user.nickname
-    }
-  ])
+  ).rejects.toEqual({
+    errors: [bestUserNickError],
+    fields: { bestUser: { nickname: bestUserNickError } }
+  })
 })
