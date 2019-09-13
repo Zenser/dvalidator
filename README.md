@@ -1,4 +1,4 @@
-# Dvalidator
+![Dvalidator](logo.jpg)
 
 [English edition](README_en.md)
 
